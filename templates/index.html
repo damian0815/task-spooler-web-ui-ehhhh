@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>CLI Tool Web Front-End</title>
+    <script src="https://unpkg.com/vue@next"></script>
+  </head>
+  <body>
+    <div id="app">
+      <h1>CLI Tool Web Front-End</h1>
+      <form @submit.prevent="executeCommand">
+        <label for="command">Enter a command:</label>
+        <input type="text" id="command" v-model="command">
+        <button type="submit">Execute</button>
+      </form>
+      <div v-if="response">
+        <h2>Output:</h2>
+        <pre>{{ response }}</pre>
+      </div>
+      <div>
+        <h2>Real-time Output:</h2>
+        <pre>{{ realTimeOutput }}</pre>
+      </div>
+    </div>
+    <script>
+      const app = Vue.createApp({
+        data() {
+          return {
+            command: '',
+            response: '',
+            realTimeOutput: '',
+            eventSource: null
+          }
+        },
+        methods: {
+          executeCommand() {
+            body = JSON.stringify({
+                command: this.command
+            })
+            console.log("body:", body);
+            fetch('/execute', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: body
+            })
+            .then(response => response.text())
+            .then(data => {
+              this.response = data
+            })
+            .catch(error => {
+              console.error(error)
+            })
+          },
+          startRealTimeOutput() {
+            this.eventSource = new EventSource('/stream')
+            this.eventSource.onmessage = (event) => {
+              this.realTimeOutput += event.data + '\n'
+            }
+          },
+          stopRealTimeOutput() {
+            if (this.eventSource) {
+              this.eventSource.close()
+            }
+            this.realTimeOutput = ''
+          }
+        }
+      })
+      app.mount('#app')
+    </script>
+  </body>
+</html>
